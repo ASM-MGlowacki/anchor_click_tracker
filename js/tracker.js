@@ -182,7 +182,7 @@
       pys_traffic_source: rawData.cookies.trafficSource,
       pys_utm_medium: rawData.cookies.utmMedium,
       pys_utm_source: rawData.cookies.utmSource,
-      pys_landing_pag: rawData.cookies.landingPage,
+      pys_landing_page: rawData.cookies.landingPage,
       "Spółka (kampania)": derivedData.campaignName,
       "Wersja skryptu": "1.3.0" 
     };
@@ -200,11 +200,98 @@
     });
   }
 
+  function handleEmailLinkClick(event) {
+    var anchor = $(event.target).closest('a');
+    if (!anchor.length) {
+      return;
+    }
+    var href = anchor.attr("href");
+    if (!href || typeof href !== "string") {
+      return;
+    }
+    var hrefLower = href.toLowerCase();
+    if (!hrefLower.startsWith("mailto:")) {
+      return;
+    }
+    var rawEmailPart = href.substring(7).split("?")[0];
+    try {
+      rawEmailPart = decodeURIComponent(rawEmailPart);
+    } catch (e) {}
+    var email = rawEmailPart.trim().toLowerCase();
+
+    if (!email) {
+      return;
+    }
+
+    var now = new Date().getTime();
+    var lastClickTimeForThisEmail = clickTimestamps[email];
+
+    if (lastClickTimeForThisEmail && now - lastClickTimeForThisEmail < CLICK_COOLDOWN_MS) {
+      return;
+    }
+    
+    clickTimestamps[email] = now;
+
+    var rawData = {
+      url: window.location.href,
+      clickedEmail: email,
+      screenWidth: window.screen.width,
+      screenHeight: window.screen.height,
+      cookies: {
+        trafficSource: getCookie("pysTrafficSource"),
+        utmMedium: getCookie("pys_utm_medium"),
+        utmSource: getCookie("pys_utm_source"),
+        landingPage: getCookie("pys_landing_page"),
+      },
+    };
+
+    var domain = window.location.hostname.replace(/^www\./, "");
+
+    var derivedData = {
+      calculatedSource: getCalculatedSource(rawData.cookies),
+      deviceType: getDeviceType(rawData.screenWidth, rawData.screenHeight),
+      timestamp: getFormattedLocalDateTime(),
+      domain: domain,
+      campaignName: getCampaignName(domain, null),
+    };
+
+    var finalPayload = {
+      "Typ zdarzenia": "email",
+      Data: derivedData.timestamp,
+      Źródło: derivedData.calculatedSource,
+      "URL na którym kliknięto": rawData.url,
+      "Adres email w który kliknięto": rawData.clickedEmail,
+      "Szerokość ekranu": rawData.screenWidth,
+      "Wysokość ekranu": rawData.screenHeight,
+      Urządzenie: derivedData.deviceType,
+      Domena: derivedData.domain,
+      pys_traffic_source: rawData.cookies.trafficSource,
+      pys_utm_medium: rawData.cookies.utmMedium,
+      pys_utm_source: rawData.cookies.utmSource,
+      pys_landing_page: rawData.cookies.landingPage,
+      "Spółka (kampania)": derivedData.campaignName,
+      "Wersja skryptu": "1.4.0"
+    };
+
+    $.ajax({
+      url: phone_tracker_config.ajax_url,
+      type: "POST",
+      data: {
+        action: "track_email_click",
+        security: phone_tracker_config.nonce,
+        payload: finalPayload,
+      },
+      success: function () {},
+      error: function () {},
+    });
+  }
+
   function initPhoneLinkTracker() {
     if (typeof phone_tracker_config === "undefined") {
       return;
     }
     $(document).on("click", handlePhoneLinkClick);
+    $(document).on("click", handleEmailLinkClick);
   }
 
   $(document).ready(function () {
