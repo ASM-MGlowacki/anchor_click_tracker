@@ -126,8 +126,17 @@ function pct_handle_phone_click_ajax() {
     }
     $payload = stripslashes_deep($_POST['payload']);
 
-    // 3. Bezpieczne przechowywanie URL-a do Zapiera
-    $zapier_webhook_url = 'https://hooks.zapier.com/hooks/catch/14409924/u36oemn/';
+    // 3. Pobranie URL-a do Zapiera z konfiguracji (wp-config.php) lub filtra
+    $zapier_webhook_url = null;
+    if ( defined('PCT_ZAPIER_WEBHOOK_URL') && PCT_ZAPIER_WEBHOOK_URL ) {
+        $zapier_webhook_url = PCT_ZAPIER_WEBHOOK_URL;
+    }
+    // Pozwól nadpisać z zewnątrz (np. w prywatnym motywie/wtyczce)
+    $zapier_webhook_url = apply_filters('pct_zapier_webhook_url', $zapier_webhook_url, $payload);
+
+    if ( ! $zapier_webhook_url ) {
+        wp_send_json_error('Brak konfiguracji webhooka Zapier (PCT_ZAPIER_WEBHOOK_URL).', 500);
+    }
 
     // 4. Wysłanie danych z serwera do Zapiera
     $response = wp_remote_post($zapier_webhook_url, [
@@ -146,5 +155,3 @@ function pct_handle_phone_click_ajax() {
 // Działa dla zalogowanych i niezalogowanych użytkowników
 add_action('wp_ajax_nopriv_track_phone_click', 'pct_handle_phone_click_ajax');
 add_action('wp_ajax_track_phone_click', 'pct_handle_phone_click_ajax');
-add_action('wp_ajax_nopriv_track_email_click', 'pct_handle_phone_click_ajax');
-add_action('wp_ajax_track_email_click', 'pct_handle_phone_click_ajax');
