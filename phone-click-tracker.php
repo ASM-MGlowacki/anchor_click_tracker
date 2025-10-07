@@ -155,3 +155,5 @@ function pct_handle_phone_click_ajax() {
 // Działa dla zalogowanych i niezalogowanych użytkowników
 add_action('wp_ajax_nopriv_track_phone_click', 'pct_handle_phone_click_ajax');
 add_action('wp_ajax_track_phone_click', 'pct_handle_phone_click_ajax');
+add_action('wp_ajax_nopriv_track_email_click', 'pct_handle_phone_click_ajax');
+add_action('wp_ajax_track_email_click', 'pct_handle_phone_click_ajax');
