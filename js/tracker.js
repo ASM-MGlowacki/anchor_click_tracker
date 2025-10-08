@@ -25,52 +25,60 @@
     var utmSource = cookies.utmSource;
     var trafficSource = cookies.trafficSource;
 
-    /* 1. Kampanie płatne (CPC) */
     if (utmMedium === "cpc") {
-      if (utmSource === "google") return "google cpc";
-      if (utmSource === "facebook") return "facebook cpc";
-      return "inne cpc";
+      switch (utmSource) {
+        case "google":
+          return "google cpc";
+        case "facebook":
+          return "facebook cpc";
+        default:
+          return "inne cpc";
+      }
     }
 
-    /* 2. Newsletter (email) */
-    if (utmSource === "newsletter" && trafficSource === "direct") {
-      return "email";
+    if (utmSource === "newsletter") {
+      switch (utmMedium) {
+        case "email":
+          return "newsletter";
+        case "sms":
+          return "Kampania SMS";
+        default:
+          return "Newsletter Inne";
+      }
     }
 
-    /* 3. Główna logika dla braku UTM-medium */
     if (!utmMedium || utmMedium === "null") {
-      
-      // --- POPRAWKA: Jeśli pys_traffic_source jest pusty lub ma wartość "direct", traktuj jako direct ---
-      if (!trafficSource || trafficSource === "direct") {
+      if (trafficSource === "direct") {
         return "direct";
       }
 
-      /* 3b. Social organic (FB | LI | Messenger | IG) */
+      if (trafficSource && trafficSource.indexOf("instagram") > -1) {
+        return "instagram organic";
+      }
+
       if (
-        trafficSource.indexOf("facebook") > -1 ||
-        trafficSource.indexOf("linkedin") > -1 ||
-        trafficSource.indexOf("messenger") > -1 ||
-        trafficSource.indexOf("instagram") > -1
+        trafficSource &&
+        (trafficSource.indexOf("facebook") > -1 ||
+          trafficSource.indexOf("linkedin") > -1 ||
+          trafficSource.indexOf("messenger") > -1)
       ) {
         return "facebook organic";
       }
 
-      /* 3c. Organic z wyszukiwarek (Google | Bing | Chat | Yahoo) */
       if (
-        trafficSource.indexOf("google") > -1 ||
-        trafficSource.indexOf("bing") > -1 ||
-        trafficSource.indexOf("chat") > -1 ||
-        trafficSource.indexOf("yahoo") > -1
+        trafficSource &&
+        (trafficSource.indexOf("google") > -1 ||
+          trafficSource.indexOf("bing") > -1 ||
+          trafficSource.indexOf("chat") > -1 ||
+          trafficSource.indexOf("yahoo") > -1 ||
+          trafficSource.indexOf("perplexity") > -1)
       ) {
         return "organic";
       }
 
-      /* 3d. Inne odsyłacze (referral) - ten warunek zadziała teraz poprawnie */
-      // Zostanie wykonany tylko, gdy trafficSource istnieje, ale nie jest żadnym z powyższych.
       return "referral";
     }
 
-    /* 4. Wszystko pozostałe */
     return "inne";
   }
 
