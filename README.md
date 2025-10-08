@@ -22,7 +22,7 @@ Prosta i lekka wtyczka WordPress do śledzenia kliknięć w linki `tel:` oraz `m
 - Delegowane śledzenie kliknięć w `a[href^="tel:"]` oraz `mailto:` (odporne na wielkość liter).
 - Fire‑and‑forget: brak ingerencji w UX (bez `preventDefault`), klient telefonu/poczty otwiera się normalnie.
 - Cooldown 60 s dla tego samego numeru/adresu e‑mail (odfiltrowanie przypadkowych podwójnych kliknięć).
-- Atrybucja źródła na podstawie ciasteczek `pysTrafficSource`, `pys_utm_medium`, `pys_utm_source`, `pys_landing_page`.
+- Zaawansowana atrybucja źródła (Google/FB CPC, Instagram/FB Organic, Newsletter/SMS) na podstawie ciasteczek `pysTrafficSource`, `pys_utm_medium` oraz `pys_utm_source`.
 - Mapowanie kampanii po domenie (spójne z istniejącymi zasadami).
 - Wspólny backendowy handler (weryfikacja nonce, wykluczanie IP, forward do Zapiera).
 
@@ -44,7 +44,11 @@ add_filter('pct_excluded_ips', function(array $ips) {
     return $ips;
 });
 ```
-- Webhook Zapier: ustawiony w `phone-click-tracker.php` w handlerze (przekierowanie payloadu). Ten sam webhook obsługuje telefon i e‑mail (rozróżnienie po polu „Typ zdarzenia”).
+- **Webhook Zapier**: Aby zapewnić maksymalne bezpieczeństwo, adres URL webhooka Zapier **musi** być zdefiniowany w pliku `wp-config.php`. Dodaj poniższą linię:
+```php
+define('PCT_ZAPIER_WEBHOOK_URL', 'https://hooks.zapier.com/hooks/catch/xxxx/yyyy/');
+```
+Wtyczka odczyta tę stałą i bezpiecznie prześle dane.
 
 ## Jak to działa
 - Frontend (`js/tracker.js`):
@@ -59,19 +63,23 @@ add_filter('pct_excluded_ips', function(array $ips) {
 ## Schemat payloadu
 Wspólne pola dla obu typów zdarzeń:
 - `Data` – lokalna data i czas (YYYY-MM-DD HH:mm:ss)
-- `Źródło` – atrybucja pozyskana z ciasteczek i reguł
+- `Źródło` – atrybucja pozyskana z ciasteczek i reguł. Logika:
+  - **CPC**: `google cpc`, `facebook cpc`
+  - **Newsletter**: `newsletter` (dla medium `email`), `Kampania SMS` (dla medium `sms`), `Newsletter Inne`
+  - **Organic Social**: `instagram organic`, `facebook organic` (dla FB, LI, Messenger)
+  - **Organic Search**: `organic` (dla Google, Bing, Yahoo itp.)
+  - **Inne**: `direct`, `referral`
 - `URL na którym kliknięto`
 - `Szerokość ekranu`, `Wysokość ekranu`
 - `Urządzenie` – desktop/mobile/tablet
 - `Domena` – `hostname` bez prefiksu `www.`
 - `pys_traffic_source`, `pys_utm_medium`, `pys_utm_source`, `pys_landing_page`
 - `Spółka (kampania)` – z `getCampaignName(domena, ...)`
-- `Wersja skryptu`
+- `Wersja skryptu` – `1.5.0`
 
 ### Kliknięcia w telefon (tel:)
 Dodatkowe pola:
 - `Numer w który kliknięto` – numer po normalizacji
-- `Wersja skryptu` = `1.3.0`
 
 AJAX:
 - `action: track_phone_click`
@@ -80,7 +88,6 @@ AJAX:
 Dodatkowe pola:
 - `Typ zdarzenia` = `email`
 - `Adres email w który kliknięto` – adres z `mailto:` (po `decodeURIComponent`, obcięciu parametrów i normalizacji do lower‑case)
-- `Wersja skryptu` = `1.4.0`
 
 AJAX:
 - `action: track_email_click`
@@ -122,6 +129,12 @@ Handler robi:
 - Błędy lintera PHP w środowisku lokalnym bez WP (undefined `add_action`, `admin_url` itp.) są oczekiwane – to funkcje WordPressa.
 
 ## Changelog
+### 1.5.0
+- **Refactor**: Zsynchronizowano i rozbudowano logikę atrybucji źródeł ruchu.
+- **Feature**: Wydzielono `instagram organic` jako osobne źródło.
+- **Feature**: Dodano szczegółowe śledzenie kampanii newsletterowych na podstawie `utm_medium` (email, SMS, inne).
+- **Chore**: Ujednolicono wersjonowanie wtyczki i skryptu do `1.5.0`.
+
 ### 1.4.0
 - Dodano śledzenie `mailto:` (fire‑and‑forget, delegowane, odporne na wielkość liter).
 - Dekodowanie adresów e‑mail (`decodeURIComponent`).
@@ -131,8 +144,10 @@ Handler robi:
 - Bazowe śledzenie `tel:`.
 
 ## FAQ
+- **Jak skonfigurować webhook Zapier?**
+  - Wklej swój adres URL webhooka do pliku `wp-config.php` w głównym katalogu WordPressa, używając stałej `define('PCT_ZAPIER_WEBHOOK_URL', 'TWOJ_WEBHOOK_URL');`.
 - **Czy mogę zmienić webhook Zapier?**
-  - Tak, w `phone-click-tracker.php` w funkcji handlera.
+  - Tak, edytując wartość stałej `PCT_ZAPIER_WEBHOOK_URL` w pliku `wp-config.php`.
 - **Czy można wyłączyć trackowanie dla określonych użytkowników/IP?**
   - Tak, użyj filtra `pct_excluded_ips`.
 - **Czy wtyczka zbiera dane osobowe?**

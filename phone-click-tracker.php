@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Phone Click Tracker
  * Description:       Śledzi kliknięcia w linki telefoniczne i wysyła dane do Zapiera przez bezpieczny endpoint AJAX.
- * Version:           1.3.0
+ * Version:           1.5.0
  * Author:            MGlowacki
  * License:           GPLv2 or later
  * Text Domain:       phone-click-tracker

@@ -192,7 +192,7 @@
       pys_utm_source: rawData.cookies.utmSource,
       pys_landing_page: rawData.cookies.landingPage,
       "Spółka (kampania)": derivedData.campaignName,
-      "Wersja skryptu": "1.3.0" 
+      "Wersja skryptu": "1.5.0" 
     };
 
     $.ajax({
@@ -278,7 +278,7 @@
       pys_utm_source: rawData.cookies.utmSource,
       pys_landing_page: rawData.cookies.landingPage,
       "Spółka (kampania)": derivedData.campaignName,
-      "Wersja skryptu": "1.4.0"
+      "Wersja skryptu": "1.5.0"
     };
 
     $.ajax({
