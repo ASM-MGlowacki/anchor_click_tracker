@@ -1,6 +1,20 @@
 (function ($) {
   "use strict";
 
+  /**
+   * Dedykowana funkcja logująca. Wyświetla wiadomości w konsoli,
+   * jeśli tryb debugowania jest włączony w konfiguracji przekazanej z PHP.
+   */
+  function pctLog() {
+    if (
+      window.phone_tracker_config &&
+      window.phone_tracker_config.debug_mode
+    ) {
+      // Używa .apply, aby zachować funkcjonalność console.log z wieloma argumentami
+      console.log.apply(console, ["[PCT Debug]:"].concat(Array.from(arguments)));
+    }
+  }
+
   var clickTimestamps = {};
   var CLICK_COOLDOWN_MS = 60000;
 
@@ -142,6 +156,9 @@
     var normalizedNumber = normalizePhoneNumber(clickedNumberRaw);
 
     if (!normalizedNumber) {
+      pctLog("Numer telefonu jest pusty po normalizacji, przerywam.", {
+        raw: clickedNumberRaw,
+      });
       return;
     }
 
@@ -149,10 +166,14 @@
     var lastClickTimeForThisNumber = clickTimestamps[normalizedNumber];
 
     if (lastClickTimeForThisNumber && now - lastClickTimeForThisNumber < CLICK_COOLDOWN_MS) {
+      pctLog("Kliknięcie w ten sam numer zbyt szybko, ignoruję.", {
+        number: normalizedNumber,
+      });
       return;
     }
 
     clickTimestamps[normalizedNumber] = now;
+    pctLog("Timestamp kliknięcia zapisany dla numeru:", normalizedNumber);
 
     var rawData = {
       url: window.location.href,
@@ -192,8 +213,10 @@
       pys_utm_source: rawData.cookies.utmSource,
       pys_landing_page: rawData.cookies.landingPage,
       "Spółka (kampania)": derivedData.campaignName,
-      "Wersja skryptu": "1.5.0" 
+      "Wersja skryptu": "1.6.0" 
     };
+
+    pctLog("Przygotowano dane do wysłania:", finalPayload);
 
     $.ajax({
       url: phone_tracker_config.ajax_url,
@@ -203,8 +226,16 @@
         security: phone_tracker_config.nonce,
         payload: finalPayload,
       },
-      success: function () {},
-      error: function () {},
+      success: function (response) {
+        pctLog("Dane telefonu wysłane pomyślnie.", response);
+      },
+      error: function (jqXHR, textStatus, errorThrown) {
+        pctLog("Błąd AJAX podczas wysyłania danych telefonu.", {
+          status: textStatus,
+          error: errorThrown,
+          response: jqXHR.responseText,
+        });
+      },
     });
   }
 
@@ -228,6 +259,9 @@
     var email = rawEmailPart.trim().toLowerCase();
 
     if (!email) {
+      pctLog("Adres email jest pusty po przetworzeniu, przerywam.", {
+        href: href,
+      });
       return;
     }
 
@@ -235,10 +269,12 @@
     var lastClickTimeForThisEmail = clickTimestamps[email];
 
     if (lastClickTimeForThisEmail && now - lastClickTimeForThisEmail < CLICK_COOLDOWN_MS) {
+      pctLog("Kliknięcie w ten sam email zbyt szybko, ignoruję.", { email: email });
       return;
     }
     
     clickTimestamps[email] = now;
+    pctLog("Timestamp kliknięcia zapisany dla emaila:", email);
 
     var rawData = {
       url: window.location.href,
@@ -278,8 +314,10 @@
       pys_utm_source: rawData.cookies.utmSource,
       pys_landing_page: rawData.cookies.landingPage,
       "Spółka (kampania)": derivedData.campaignName,
-      "Wersja skryptu": "1.5.0"
+      "Wersja skryptu": "1.6.0"
     };
+
+    pctLog("Przygotowano dane email do wysłania:", finalPayload);
 
     $.ajax({
       url: phone_tracker_config.ajax_url,
@@ -289,20 +327,36 @@
         security: phone_tracker_config.nonce,
         payload: finalPayload,
       },
-      success: function () {},
-      error: function () {},
+      success: function (response) {
+        pctLog("Dane email wysłane pomyślnie.", response);
+      },
+      error: function (jqXHR, textStatus, errorThrown) {
+        pctLog("Błąd AJAX podczas wysyłania danych email.", {
+          status: textStatus,
+          error: errorThrown,
+          response: jqXHR.responseText,
+        });
+      },
     });
   }
 
   function initPhoneLinkTracker() {
     if (typeof phone_tracker_config === "undefined") {
+      console.error(
+        "[PCT Error]: Obiekt konfiguracyjny 'phone_tracker_config' nie został znaleziony. Skrypt nie będzie działać."
+      );
       return;
     }
+    pctLog(
+      "Inicjalizacja trackera. Konfiguracja załadowana:",
+      phone_tracker_config
+    );
     $(document).on("click", handlePhoneLinkClick);
     $(document).on("click", handleEmailLinkClick);
   }
 
   $(document).ready(function () {
+    pctLog("Dokument gotowy.");
     initPhoneLinkTracker();
   });
 })(jQuery);

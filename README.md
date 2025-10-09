@@ -50,6 +50,17 @@ define('PCT_ZAPIER_WEBHOOK_URL', 'https://hooks.zapier.com/hooks/catch/xxxx/yyyy
 ```
 Wtyczka odczyta tę stałą i bezpiecznie prześle dane.
 
+### Tryb debugowania (NOWOŚĆ w 1.6.0)
+Aby włączyć szczegółowe logowanie błędów i kroków działania wtyczki, dodaj poniższą linię w pliku `phone-click-tracker.php` na samej górze, tuż pod informacjami o wtyczce:
+```php
+define('PCT_DEBUG_MODE', true);
+```
+Gdy tryb jest włączony (`true`):
+- **Logi serwera**: Szczegółowe informacje o działaniu wtyczki będą zapisywane w pliku `/wp-content/debug.log`.
+- **Logi przeglądarki**: Informacje o zdarzeniach po stronie klienta (kliknięcia, wysyłki AJAX) będą widoczne w konsoli deweloperskiej przeglądarki (F12).
+
+Ustawienie `false` wyłącza całe logowanie.
+
 ## Jak to działa
 - Frontend (`js/tracker.js`):
   - Nasłuchuje kliknięć na całym `document` i reaguje, gdy kliknięto link `tel:` lub `mailto:`.
@@ -75,7 +86,7 @@ Wspólne pola dla obu typów zdarzeń:
 - `Domena` – `hostname` bez prefiksu `www.`
 - `pys_traffic_source`, `pys_utm_medium`, `pys_utm_source`, `pys_landing_page`
 - `Spółka (kampania)` – z `getCampaignName(domena, ...)`
-- `Wersja skryptu` – `1.5.0`
+- `Wersja skryptu` – `1.6.0`
 
 ### Kliknięcia w telefon (tel:)
 Dodatkowe pola:
@@ -109,7 +120,7 @@ Handler robi:
 
 ## Testy i DoD
 - Kliknięcie w `mailto:` generuje jedno żądanie z `action=track_email_click`, poprawnym nonce i payloadem zawierającym:
-  - `Typ zdarzenia`=`email`, `Adres email w który kliknięto`, `Data`, `Źródło`, `URL na którym kliknięto`, `Szerokość/Wysokość ekranu`, `Urządzenie`, `Domena`, `pys_*` cookies, `Spółka (kampania)`, `Wersja skryptu`=`1.4.0`.
+  - `Typ zdarzenia`=`email`, `Adres email w który kliknięto`, `Data`, `Źródło`, `URL na którym kliknięto`, `Szerokość/Wysokość ekranu`, `Urządzenie`, `Domena`, `pys_*` cookies, `Spółka (kampania)`, `Wersja skryptu`=`1.6.0`.
 - Powtórne kliknięcia tego samego adresu w ≤60 s nie generują kolejnych żądań; >60 s są zliczane ponownie.
 - Backend zwraca JSON success i forwarduje payload do Zapiera; istniejące `tel:` działa bez regresji.
 - `pys_landing_page` jest spójne w payloadach telefonu i e‑maila.
@@ -122,13 +133,21 @@ Handler robi:
 5. Zweryfikuj w Zapier, że zdarzenie dotarło na webhook.
 
 ## Rozwiązywanie problemów
-- Brak żądania w Network:
-  - Sprawdź, czy IP nie jest na liście wykluczonych.
+- **Brak żądania AJAX w zakładce Network:**
+  - **Włącz tryb debugowania:** Ustaw `define('PCT_DEBUG_MODE', true);` w pliku `phone-click-tracker.php`.
+  - **Sprawdź logi**: Otwórz plik `/wp-content/debug.log` i konsolę przeglądarki (F12). Powinny się tam znajdować szczegółowe informacje, np. o wykluczeniu IP lub braku obiektu konfiguracyjnego.
+  - Sprawdź, czy Twoje IP nie jest na liście wykluczonych.
   - Upewnij się, że `js/tracker.js` jest załadowany na stronie.
-  - Zweryfikuj, że `phone_tracker_config` (nonce, `ajax_url`) jest obecny w `window`.
+  - Zweryfikuj, że obiekt `phone_tracker_config` (z `nonce` i `ajax_url`) jest obecny w `window`.
 - Błędy lintera PHP w środowisku lokalnym bez WP (undefined `add_action`, `admin_url` itp.) są oczekiwane – to funkcje WordPressa.
 
 ## Changelog
+### 1.6.0
+- **Feature**: Dodano zaawansowany tryb debugowania, aktywowany flagą `PCT_DEBUG_MODE`.
+- **Feature**: Wprowadzono szczegółowe logowanie po stronie serwera (PHP) do pliku `/wp-content/debug.log`.
+- **Feature**: Dodano logowanie po stronie klienta (JavaScript) do konsoli przeglądarki, zsynchronizowane z flagą debugowania.
+- **Chore**: Ujednolicono wersjonowanie wtyczki i skryptu do `1.6.0`.
+
 ### 1.5.0
 - **Refactor**: Zsynchronizowano i rozbudowano logikę atrybucji źródeł ruchu.
 - **Feature**: Wydzielono `instagram organic` jako osobne źródło.
