@@ -59,7 +59,7 @@ Gdy tryb jest włączony (`true`):
 - **Logi serwera**: Szczegółowe informacje o działaniu wtyczki będą zapisywane w pliku `/wp-content/debug.log`.
 - **Logi przeglądarki**: Informacje o zdarzeniach po stronie klienta (kliknięcia, wysyłki AJAX) będą widoczne w konsoli deweloperskiej przeglądarki (F12).
 
-Ustawienie `false` wyłącza całe logowanie.
+Ustawienie `false` wyłącza całe logowanie. **Uwaga**: W trybie debugowania adresy IP `194.11.13.241` oraz `171.25.230.115` są automatycznie przepuszczane (nie są blokowane), aby umożliwić testowanie.
 
 ## Jak to działa
 - Frontend (`js/tracker.js`):

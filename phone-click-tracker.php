@@ -79,6 +79,17 @@ function pct_get_user_ip() {
  * @return bool True, jeśli IP jest wykluczone, w przeciwnym razie false.
  */
 function pct_is_ip_excluded() {
+    $current_ip = pct_get_user_ip();
+
+    // W trybie debugowania, zezwalaj na testowanie z określonych adresów IP, nawet jeśli są na liście wykluczonych.
+    if (defined('PCT_DEBUG_MODE') && PCT_DEBUG_MODE === true) {
+        $debug_allowed_ips = ['194.11.193.241', '171.25.230.115'];
+        if (in_array($current_ip, $debug_allowed_ips, true)) {
+            pct_log("Tryb debugowania jest włączony. IP $current_ip jest dozwolone do testów i nie będzie blokowane.");
+            return false; // Nie wykluczaj tego IP
+        }
+    }
+
     // Domyślna lista wykluczonych adresów IP (np. biuro, dom)
     $excluded_ips = [
         '127.0.0.1',
@@ -91,7 +102,6 @@ function pct_is_ip_excluded() {
     // Pozwalamy na modyfikację listy z zewnątrz (np. przez inną wtyczkę lub functions.php)
     $filtered_ips = apply_filters('pct_excluded_ips', $excluded_ips);
     
-    $current_ip = pct_get_user_ip();
     pct_log("Sprawdzanie wykluczenia dla IP: " . ($current_ip ? $current_ip : 'Nieznane'));
 
     if ( ! $current_ip ) {
